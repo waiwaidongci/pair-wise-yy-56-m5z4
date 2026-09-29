@@ -1,7 +1,12 @@
-import { Component } from '@angular/core'
+import { Component, OnInit, inject } from '@angular/core'
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router'
+import { Store } from '@ngrx/store'
 import { ButtonModule } from 'primeng/button'
 import { TagModule } from 'primeng/tag'
+import { WeldGraphqlService } from './services/weld-graphql.service'
+import { ReviewSyncService } from './services/review-sync.service'
+import { WeldState } from './store/weld.reducer'
+import * as A from './store/weld.actions'
 
 @Component({
   selector:'app-root', standalone:true, imports:[RouterOutlet,RouterLink,RouterLinkActive,ButtonModule,TagModule],
@@ -14,4 +19,14 @@ import { TagModule } from 'primeng/tag'
     @media(max-width:950px){.topbar{height:auto;min-height:64px;padding:10px;flex-wrap:wrap}.brand{min-width:210px}nav{order:3;width:100%;overflow:auto}.topbar p-tag{display:none}}
   `],
 })
-export class AppComponent {}
+export class AppComponent implements OnInit {
+  private readonly store = inject(Store<{ welds: WeldState }>)
+  private readonly api = inject(WeldGraphqlService)
+  private readonly sync = inject(ReviewSyncService)
+
+  ngOnInit() {
+    this.sync.start()
+    this.api.load().subscribe(({ welds, plans, reviewBatches }) =>
+      this.store.dispatch(A.loadWeldsSuccess({ welds, plans, reviewBatches })))
+  }
+}
